@@ -139,7 +139,7 @@ public static class Package {
 }
 
 public static interface MailService {
-    Sendable processMail(Sendable mail);
+    Sendable processMail(Sendable mail) throws Exception;
 }
 
 /*
@@ -154,128 +154,105 @@ public static class RealMailService implements MailService {
     }
 }
 
-public static class UntrustworthyMailWorker implements MailService{
-    UntrustworthyMailWorker(MailService[] MailService) {
+//public static class UntrustworthyMailWorker implements MailService {
+//    private RealMailService realMailService;
+//    private MailService[] mailServices;
+//
+//    public UntrustworthyMailWorker(MailService[] mailServices) {
+//
+//    }
+//
+//    @Override
+//    public Sendable processMail(Sendable mail) {
+//       RealMailService.processMail();
+//        }
+//        return m;
+//    }
+//
+//    public RealMailService getRealMailService() {
+//        return realMailService;
+//    }
+//}
+
+public static class Spy implements MailService {
+    private final static Logger LOGGER = Logger.getLogger(Spy.class.getName());
+    private final Logger logger;
+
+    public Spy(Logger logger) {
+        this.logger = logger;
     }
-
-    public Object UntrustworthyMailWorker(MailService[] mailService){
-        Object o=new Object();
-        for (MailService i:mailService) {
-            o.proccessMail;
-        }
-        return
-    }
-
-    RealMailService rms = new RealMailService();
-
-
-    private RealMailService getRealMailService() {
-
-        return
-    }
-
 
     @Override
     public Sendable processMail(Sendable mail) {
-        return null;
-    }
-}
-
-public static class Spy extends MailMessage {
-
-    Spy(String from, String to, String message) {
-        super(from, to, message);
-    }
-
-
-    public void Spy() {
-        MailMessage mm = new MailMessage(getFrom(), getTo(), getMessage());
-        if (mm.getFrom().contains(AUSTIN_POWERS) || mm.getTo().contains(AUSTIN_POWERS)) {
-            Logger logger = Logger.getLogger("log");
-            logger.log(Level.WARNING, "Detected target mail correspondence: from" + getFrom() + "to" + getTo() + getMessage());
-        } else {
-            Logger logger1 = Logger.getLogger("log1");
-            logger1.log(Level.INFO, "Usual correspondence: from" + getFrom() + "to" + getTo());
+        if (mail instanceof MailMessage) {
+            MailMessage mm = (MailMessage) mail;
+            if (mm.getFrom().contains(AUSTIN_POWERS) || mm.getTo().contains(AUSTIN_POWERS)) {
+                Logger logger = Logger.getLogger("log");
+                logger.log(Level.WARNING, "Detected target mail correspondence: from" + mm.getFrom() + "to" + mm.getTo() + mm.getMessage());
+            } else {
+                Logger logger1 = Logger.getLogger("log1");
+                logger1.log(Level.INFO, "Usual correspondence: from" + mm.getFrom() + "to" + mm.getTo());
+            }
         }
+        return mail;
     }
 }
 
-public static class Thief extends Package {
+public static class Thief implements MailService {
 
-    int cost;
-    int summ = 0;
+    private int cost;
+    private int summ = 0;
 
-    Thief(String content, int price) {
-        super(content, price);
-
+    public Thief(int cost) {
+        this.cost = cost;
     }
-
-    public Package Thief() {
-        Thief tf = new Thief(getContent(), getPrice());
-        if (getPrice() > getCost()) {
-            Thief tf1 = new Thief(getContent1(), getPrice1());
-            summ += getPrice();
-            return tf1;
-        } else return tf;
-
-    }
-
-    private int getPrice1() {
-        return 0;
-    }
-
-    private String getContent1() {
-        return "stones instead of " + getContent();
-    }
-
 
     public int getStolenValue() {
         return summ;
     }
 
-    public int getCost() {
-        return cost;
-    }
-}
 
+    @Override
+    public Sendable processMail(Sendable mail) {
+        if (mail instanceof Package) {
+            Package pg = (Package) mail;
+            if (pg.getPrice() >= cost) {
+                summ += pg.getPrice();
+                mail = new MailPackage(mail.getFrom(),mail.getTo(),new Package("stones instead of " + pg.getContent(), 0));
 
-public static class Inspector extends Package {
-
-
-    Inspector(String content, int price) {
-        super(content, price);
-    }
-
-    public void Inspector() throws Exception {
-        Package aPackage = new Package(getContent(), getPrice());
-        try {
-            if (aPackage.getContent().equals("weapons") || aPackage.getContent().equals("banned substance")) {
             }
-        } catch (Exception e) {
-            throw new IllegalPackageException();
         }
-        try {
-            if (aPackage.getContent().equals("stones")) {
-            }
-
-        } catch (Exception e) {
-            throw new StolenPackageException();
-        }
-        try {
-            if (aPackage.getPrice() == 0) {
-            }
-        } catch (Exception e) {
-            throw new Exception();
-        }
-    }
-
-    static class IllegalPackageException extends Exception {
-    }
-
-    static class StolenPackageException extends Exception {
+        return mail;
 
     }
 
 
 }
+
+public static class Inspector implements MailService {
+
+
+    @Override
+    public Sendable processMail(Sendable mail) throws RuntimeException {
+        if (mail instanceof Package) {
+            Package pg = (Package) mail;
+
+            if (pg.getContent().equals("weapons") || pg.getContent().equals("banned substance"))
+                throw new IllegalPackageException();
+            if (pg.getContent().equals("stones"))
+                throw new StolenPackageException();
+            if (pg.getPrice() == 0)
+                throw new RuntimeException();
+        }
+        return mail;
+    }
+}
+
+public static class IllegalPackageException extends RuntimeException {
+}
+
+public static class StolenPackageException extends RuntimeException {
+}
+
+
 }
